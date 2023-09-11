@@ -7,6 +7,7 @@ import io.qameta.allure.Story;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.practicum.models.CreateUserRequest;
@@ -18,9 +19,25 @@ import static ru.practicum.steps.AuthApi.getAuthToken;
 import static ru.practicum.steps.UserApi.*;
 @DisplayName("Редактирование пользователя")
 public class ChangeUserTests {
+    CreateUserRequest data;
+    Response response;
+    String token;
+
     @Before
     public void setUp() {
         RestAssured.baseURI = BASE_URL;
+        data = getUser();
+        response = sendPostRequestCreateUser(data);
+        checkCreateUser(response);
+        // Получаем токен
+        token = getAuthToken(response);
+        sendGetRequestUser(token);
+    }
+
+    @After
+    public void tearDown() {
+        Response responseDelete = deleteUser(token);
+        checkDeleteUser(responseDelete);
     }
 
     @Test
@@ -29,22 +46,9 @@ public class ChangeUserTests {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("Получение данных пользователя с авторизацией")
     public void getUserTest() {
-        CreateUserRequest data = getUser();
-        // Создать пользователя
-        Response response = sendPostRequestCreateUser(data);
-        checkCreateUser(response);
-
-        // Получаем токен
-        String token = getAuthToken(response);
-        sendGetRequestUser(token);
-
         String email = response.getBody().jsonPath().get("user.email");
         String name = response.getBody().jsonPath().get("user.name");
-
         checkDataUser(response, email, name);
-        // Удаляем пользователя
-        Response responseDelete = deleteUser(token);
-        checkDeleteUser(responseDelete);
     }
 
     @Test
@@ -53,14 +57,6 @@ public class ChangeUserTests {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("Редактирование данных пользователя с авторизацией")
     public void changeUserTest() {
-        CreateUserRequest data = getUser();
-        // Создать пользователя
-        Response response = sendPostRequestCreateUser(data);
-        checkCreateUser(response);
-
-        // Получаем токен
-        String token = getAuthToken(response);
-        sendGetRequestUser(token);
         String email = response.getBody().jsonPath().get("user.email");
         String name = response.getBody().jsonPath().get("user.name");
         checkDataUser(response, email, name);
@@ -68,10 +64,6 @@ public class ChangeUserTests {
         CreateUserRequest newData = getUser();
         Response newResponse = sendPatchRequestUser(newData, token);
         checkCreateUser(newResponse);
-
-        // Удаляем пользователя
-        Response responseDelete = deleteUser(token);
-        checkDeleteUser(responseDelete);
     }
 
     @Test
@@ -80,21 +72,9 @@ public class ChangeUserTests {
     @Severity(SeverityLevel.CRITICAL)
     @DisplayName("Редактирование данных пользователя без авторизации")
     public void changeUserWithoutAuthTest() {
-        CreateUserRequest data = getUser();
-        // Создать пользователя
-        Response response = sendPostRequestCreateUser(data);
-        checkCreateUser(response);
-
-        // Получаем токен
-        String token = getAuthToken(response);
-
         CreateUserRequest newdata = getUser();
         Response newResponse = sendPatchRequestWithoutAuthUser(newdata);
         checkChangeUserWithoutAuthUser(newResponse);
-
-        // Удаляем пользователя
-        Response responseDelete = deleteUser(token);
-        checkDeleteUser(responseDelete);
     }
 
 
